@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 import glob
 from utils import PascalVocReader
 
@@ -8,17 +9,21 @@ class UserAlignmentAnotator(object):
 				 stride, 
 				 lag, 
 				 images_path='./imgs/',
-				 lay_folder_path='./layouts/'):
+				 lay_folder_path='./layouts/',
+				 curr_index=-1,
+				 history=[]):
 		
 		self.images_path = images_path
-		self.images_info_list = sorted(glob.glob(images_path+'*.xml'))
+		self.images_info_list = sorted(glob.glob(os.path.join(images_path, '*.xml')))
 		self.N = len(self.images_info_list)
 
-		self.history = []
-		self.curr_index = -1
+		self.history = history
+		self.curr_index = curr_index
 		self.stride = stride
 		self.lag = lag
 		self.lay_folder_path = lay_folder_path
+
+		self.write_layout_info()
 
 	def write_layout_info(self):
 		
@@ -38,7 +43,8 @@ class UserAlignmentAnotator(object):
 
 		if self.curr_index == -1:
 			left, right = 0, 0+self.lag
-			self.history.append((left,right))
+			if len(self.history) == 0:
+				self.history.append((left,right))
 			self.curr_index += 1
 			return self.history[self.curr_index]
 		
@@ -140,6 +146,7 @@ class UserAlignmentAnotator(object):
 			right_img = cv2.putText(right_img, str(id), (x1+int(w*0.3), y1+int(h*0.7)), cv2.FONT_HERSHEY_DUPLEX, text_sz, (255, 255, 255),1, lineType=cv2.LINE_AA)
 
 		return left_img,left_hashes,right_img,right_hashes
+
 	def next_pair(self):
 		left,right = self.next()
 		name1 = self.lay_folder_path+str(left)+'.jpg'
@@ -164,7 +171,6 @@ class UserAlignmentAnotator(object):
 			img1,k1,img2,k2  = self.plotify(left,right)
 			cv2.imwrite(name1,img1)
 			cv2.imwrite(name2,img2)
-
 		return img1,k1,img2,k2 #or path1,k1,path2,k2
 
 
@@ -199,4 +205,5 @@ if __name__ == "__main__":
 	uaa = UserAlignmentAnotator(1,1)
 	uaa.write_layout_info()
 	img1,k1,img2,k2 = uaa.next_pair()
+	uaa.next_pair()
 
