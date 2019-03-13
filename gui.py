@@ -52,8 +52,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.setScene(self._scene)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        #self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        #self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
@@ -109,16 +109,20 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         if self._photo.isUnderMouse():
             self.photoClicked.emit(QtCore.QPoint(event.pos()))
         super(PhotoViewer, self).mousePressEvent(event)
+
+    def showEvent(self, event):
+        #self.fitInView()
+        return QWidget.showEvent(self, event)
  
 class App(QWidget):
  
     def __init__(self, width, height):
         super().__init__()
         self.title = 'User Alignment Annotator'
-        self.left = 0
-        self.top = 0
         self.width = width
         self.height = height
+        self.left = (self.width*10)//100
+        self.top = (self.height*10)//100
 
         self.annotatons = {}
         self.data_dic = {'annotatons': self.annotatons}
@@ -154,32 +158,47 @@ class App(QWidget):
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
+
+        self.vlayout = QVBoxLayout()
+
+
         self.start_btn = QPushButton('Start New Annotation', self) 
-        self.start_btn.clicked.connect(self.start_on_click)
+        self.start_btn.released.connect(self.start_on_click)
         self.start_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.start_btn.setEnabled(self.data_path != None)
         self.start_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.grid = QGridLayout()
-        self.grid.addWidget(self.start_btn, 2, 0)
+        #self.grid = QGridLayout()
+        #self.grid.addWidget(self.start_btn, 2, 0)
 
         self.load_btn = QPushButton('Load Saved Annotation', self) 
         self.load_btn.clicked.connect(self.load_saved_anots_on_click)
         self.load_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.grid.addWidget(self.load_btn, 3, 0)
+        #self.grid.addWidget(self.load_btn, 3, 0)
 
         self.browse_btn = QPushButton('Select Data Folder', self) 
         self.browse_btn.clicked.connect(self.browse_on_click)
         self.browse_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.grid.addWidget(self.browse_btn, 0, 0)
+        #self.grid.addWidget(self.browse_btn, 0, 0)
+        
 
         self.path_label = QLabel('Data Path: ')
         self.path_label.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.grid.addWidget(self.path_label, 1, 0)
+        #self.grid.addWidget(self.path_label, 1, 0)
 
-        self.spaceItem = QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.grid.addItem(self.spaceItem, 4, 0)        
-        self.setLayout(self.grid)    
-        self.show()
+        
+
+        # self.spaceItem = QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+
+        self.vlayout.addWidget(self.browse_btn)
+        self.vlayout.addWidget(self.path_label)
+        self.vlayout.addWidget(self.start_btn)
+        self.vlayout.addWidget(self.load_btn)
+        self.vlayout.setAlignment(QtCore.Qt.AlignCenter)
+        self.setLayout(self.vlayout)
+
+        #self.grid.addItem(self.spaceItem, 4, 0)        
+        #self.setLayout(self.grid)    
+        self.showMaximized()
 
     def browse_on_click(self):
         self.data_path = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -192,31 +211,29 @@ class App(QWidget):
     def view_left_image(self, img1):
         img1 = toQImage(img1)
         pixmap = QPixmap.fromImage(img1)
-        self.left_viewer.viewport().resize(img1.height(), img1.width())
         self.left_viewer.setPhoto(pixmap)  
-        self.grid.addWidget(self.left_viewer, 0, 0, 1, 5)
 
     def view_right_image(self, img2):
+        
         img2 = toQImage(img2)
-        self.right_viewer.viewport().resize(img2.height(), img2.width())
         pixmap = QPixmap.fromImage(img2)
         self.right_viewer.setPhoto(pixmap)
-        self.grid.addWidget(self.right_viewer, 0, 5, 1, 5) 
+
+    def showEvent(self, event):
+        return QWidget.showEvent(self, event)     
 
     def start_on_click(self):
         img1,k1,img2,k2 = self.uaa.next_pair()
-        #im = cv2.imread(os.path.join(self.data_path, 'predictions.png'))
-        #im = im.scaled(5*self.height//6, 5*self.width//6, QtCore.Qt.KeepAspectRatio)
+        self.img_hlayout = QHBoxLayout()
         self.left_viewer = PhotoViewer(self)
-        self.view_left_image(img1)
-
-        #im = cv2.imread(os.path.join(self.data_path, 'predictions.png'))
-        #im = im.scaled(5*self.height//6, 5*self.width//6, QtCore.Qt.KeepAspectRatio)
         self.right_viewer = PhotoViewer(self)
+        self.view_left_image(img1)
         self.view_right_image(img2)
-
-        self.left_img_clients = k1#self.data[self.uaa.curr_index]['left_clients']
-        self.right_img_clients = k2#self.data[self.uaa.curr_index]['right_clients']
+        self.img_hlayout.addWidget(self.left_viewer)
+        self.img_hlayout.addWidget(self.right_viewer)
+        
+        self.left_img_clients = k1
+        self.right_img_clients = k2
 
         self.lscroll_area = QtWidgets.QScrollArea()
         self.lscroll_widget = QtWidgets.QWidget()
@@ -224,7 +241,7 @@ class App(QWidget):
         self.lscroll_widget.setLayout(self.lscroll_widget_layout)
         self.lscroll_area.setWidget(self.lscroll_widget)
         self.lscroll_area.setWidgetResizable(True)
-        self.lscroll_area.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        self.lscroll_area.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
 
         self.rscroll_area = QtWidgets.QScrollArea()
         self.rscroll_widget = QtWidgets.QWidget()
@@ -232,35 +249,69 @@ class App(QWidget):
         self.rscroll_widget.setLayout(self.rscroll_widget_layout)
         self.rscroll_area.setWidget(self.rscroll_widget)
         self.rscroll_area.setWidgetResizable(True)
-        self.rscroll_area.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        self.rscroll_area.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
 
 
         self.add_client_btns()
 
+        self.progress_label = QLabel('Progress Info: %d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
+        self.progress_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.client_btns_hlayout = QHBoxLayout()
+
+        self.client_btns_hlayout.addWidget(self.lscroll_area)
+        self.client_btns_hlayout.addWidget(self.progress_label)
+        self.client_btns_hlayout.addWidget(self.rscroll_area)
+
+        
+
+        #self.grid.addWidget(self.rscroll_area, 2, 1)
+        #self.grid.addWidget(self.rscroll_area, 2, 7)
+
+    
         self.save_btn = QPushButton('save', self)
         self.save_btn.clicked.connect(self.save_btn_on_click)
-        self.grid.addWidget(self.save_btn, 1, 5)
+        self.save_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        # self.grid.addWidget(self.save_btn, 1, 5)
 
         self.next_btn = QPushButton('next', self)
         self.next_btn.clicked.connect(self.next_btn_on_click)
-        self.grid.addWidget(self.next_btn, 1, 4)
+        self.next_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        # self.grid.addWidget(self.next_btn, 1, 4)
 
         self.back_btn = QPushButton('back', self)
         self.back_btn.clicked.connect(self.back_btn_on_click)
-        self.grid.addWidget(self.back_btn, 1, 3)
+        self.back_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        # self.grid.addWidget(self.back_btn, 1, 3)
 
-        self.progress_label = QLabel('%d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
-        self.progress_label.setAlignment(QtCore.Qt.AlignTop)
-        self.grid.addWidget(self.progress_label, 2, 4)
-        self.grid.addWidget(self.lscroll_area, 2, 1)
-        self.grid.addWidget(self.rscroll_area, 2, 7)
+        self.control_btn_hlayout = QHBoxLayout()
+        self.cont_spaceItem = QtWidgets.QSpacerItem(0, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.control_btn_hlayout.addItem(self.cont_spaceItem)
+        self.control_btn_hlayout.addWidget(self.back_btn)
+        self.control_btn_hlayout.addWidget(self.next_btn)
+        self.control_btn_hlayout.addWidget(self.save_btn)
+        self.control_btn_hlayout.addItem(self.cont_spaceItem)
+
+        self.vlayout.addLayout(self.img_hlayout)
+        self.vlayout.addLayout(self.control_btn_hlayout)
+        self.vlayout.addLayout(self.client_btns_hlayout)
+
+        
+        # self.grid.addWidget(self.progress_label, 2, 4)
+        # self.grid.addWidget(self.lscroll_area, 2, 1)
+        # self.grid.addWidget(self.rscroll_area, 2, 7)
 
         self.start_btn.deleteLater()
         self.browse_btn.deleteLater()
         self.path_label.deleteLater()
         self.load_btn.deleteLater()
-        self.grid.removeItem(self.spaceItem)
+        #self.grid.removeItem(self.spaceItem)
+        #self.left_viewer.fitInView()
+        QtCore.QTimer.singleShot(0, self.fitInViewImgs)
 
+    def fitInViewImgs(self):
+        self.left_viewer.fitInView()
+        self.right_viewer.fitInView()
 
     def save_annotations(self):
         self.data_dic['curr_index'] = self.uaa.curr_index
@@ -330,7 +381,7 @@ class App(QWidget):
         self.last_clicked_button = None
         if (self.anot_save_path != None) and os.path.isfile(self.anot_save_path):
             self.save_annotations()
-        self.progress_label.setText('%d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
+        self.progress_label.setText('Progress Info: %d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
 
     def back_btn_on_click(self):
         img1,k1,img2,k2 = self.uaa.back_pair()
@@ -345,7 +396,7 @@ class App(QWidget):
         self.last_clicked_button = None
         if (self.anot_save_path != None) and os.path.isfile(self.anot_save_path):
             self.save_annotations()
-        self.progress_label.setText('%d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
+        self.progress_label.setText('Progress Info: %d/%d'%(self.uaa.curr_index+1, self.uaa.N-1))
 
     def load_anots(self):
         if str(self.uaa.curr_index) in self.annotatons:
@@ -418,5 +469,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     screen_resolution = app.desktop().screenGeometry()
     width, height = screen_resolution.width(), screen_resolution.height()
+    width = width - (width*20)//100
+    height = height - (height*20)//100
     ex = App(width=width, height=height)
     sys.exit(app.exec_())

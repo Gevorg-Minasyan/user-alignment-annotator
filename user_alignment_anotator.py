@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+from pathlib import Path
 import glob
 from utils import PascalVocReader
 
@@ -8,13 +9,14 @@ class UserAlignmentAnotator(object):
 	def __init__(self,
 				 stride, 
 				 lag, 
-				 images_path='./imgs/',
-				 lay_folder_path='./layouts/',
+				 images_path='imgs/',
+				 lay_folder_path='layouts/',
 				 curr_index=-1,
 				 history=[]):
 		
 		self.images_path = images_path
 		self.images_info_list = sorted(glob.glob(os.path.join(images_path, '*.xml')))
+		self.images_info_list = [name.replace('\\', '/')  for name in self.images_info_list]
 		self.N = len(self.images_info_list)
 
 		self.history = history
