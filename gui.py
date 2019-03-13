@@ -307,7 +307,7 @@ class App(QWidget):
         self.load_btn.deleteLater()
         #self.grid.removeItem(self.spaceItem)
         #self.left_viewer.fitInView()
-        QtCore.QTimer.singleShot(0, self.fitInViewImgs)
+        QtCore.QTimer.singleShot(50, self.fitInViewImgs)
 
     def fitInViewImgs(self):
         self.left_viewer.fitInView()
